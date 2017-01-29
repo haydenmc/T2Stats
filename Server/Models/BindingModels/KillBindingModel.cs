@@ -1,3 +1,4 @@
+using System;
 using Newtonsoft.Json;
 
 namespace T2Stats.Models.BindingModels
@@ -12,8 +13,11 @@ namespace T2Stats.Models.BindingModels
 
         [JsonProperty("killer")]
         public PlayerBindingModel Killer { get; set; }
+        
+        [JsonProperty("matchTime")]
+        public TimeSpan MatchTime { get; set; }
 
-        [JsonProperty("reporter")]
-        public PlayerBindingModel Reporter { get; set; }
+        [JsonProperty("match")]
+        public MatchBindingModel Match { get; set; }
     }
 }

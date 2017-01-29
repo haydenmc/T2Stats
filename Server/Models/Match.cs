@@ -19,6 +19,8 @@ namespace T2Stats.Models
         [ForeignKey("MapId")]
         public Map Map { get; set; }
 
+        public string GameType { get; set; }
+
         public Guid ServerId { get; set; }
 
         [InverseProperty("Matches")]
