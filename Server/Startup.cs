@@ -34,6 +34,7 @@ namespace T2Stats
             services.AddEntityFrameworkSqlServer()
                 .AddDbContext<ApplicationDbContext>(options => 
                     options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,7 +53,6 @@ namespace T2Stats
             // Add MVC / file serving
             app.UseDefaultFiles();
             app.UseStaticFiles();
-            app.UseIdentity();
             app.UseMvcWithDefaultRoute();
         }
     }

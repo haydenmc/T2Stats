@@ -20,7 +20,7 @@ namespace T2Stats.Controllers
         }
 
         [HttpPost]
-        [Route("/")]
+        [Route("")]
         public IActionResult PostKill([FromBody] KillBindingModel submittedKill)
         {
             if (submittedKill.Match?.Server != null)
@@ -31,7 +31,7 @@ namespace T2Stats.Controllers
                     s.Port == submittedKill.Match.Server.Port);
                 if (dbServer == null)
                 {
-                    dbServer = new Server()
+                    dbServer = new Models.Server()
                     {
                         ServerId = Guid.NewGuid(),
                         IpAddress = submittedKill.Match.Server.IpAddress,
@@ -74,6 +74,65 @@ namespace T2Stats.Controllers
                     db.SaveChanges();
                 }
 
+                // Populate reporter
+                var dbReporter = db.Players.FirstOrDefault(p =>
+                    p.TribesGuid == submittedKill.Reporter.TribesGuid);
+                if (dbReporter == null)
+                {
+                    dbReporter = new Player()
+                    {
+                        PlayerId = Guid.NewGuid(),
+                        TribesGuid = submittedKill.Reporter.TribesGuid,
+                        Name = submittedKill.Reporter.Name
+                    };
+                    db.Players.Add(dbReporter);
+                    db.SaveChanges();
+                }
+
+                // Populate victim
+                var dbVictim = db.Players.FirstOrDefault(p =>
+                    p.TribesGuid == submittedKill.Victim.TribesGuid);
+                if (dbVictim == null)
+                {
+                    dbVictim = new Player()
+                    {
+                        PlayerId = Guid.NewGuid(),
+                        TribesGuid = submittedKill.Victim.TribesGuid,
+                        Name = submittedKill.Victim.Name
+                    };
+                    db.Players.Add(dbVictim);
+                    db.SaveChanges();
+                }
+
+                // Populate killer
+                var dbKiller = db.Players.FirstOrDefault(p =>
+                    p.TribesGuid == submittedKill.Killer.TribesGuid);
+                if (dbKiller == null)
+                {
+                    dbKiller = new Player()
+                    {
+                        PlayerId = Guid.NewGuid(),
+                        TribesGuid = submittedKill.Killer.TribesGuid,
+                        Name = submittedKill.Killer.Name
+                    };
+                    db.Players.Add(dbKiller);
+                    db.SaveChanges();
+                }
+
+                // Populate weapon
+                var dbWeapon = db.Weapons.FirstOrDefault(w =>
+                    w.Name.ToLower() == submittedKill.WeaponName.ToLower());
+                if (dbWeapon == null)
+                {
+                    dbWeapon = new Weapon()
+                    {
+                        WeaponId = Guid.NewGuid(),
+                        Name = submittedKill.WeaponName
+                    };
+                    db.Weapons.Add(dbWeapon);
+                    db.SaveChanges();
+                }
+
                 // Then, verify Kill
                 var dbKill = db.Kills.FirstOrDefault(k => 
                     k.Killer.TribesGuid == submittedKill.Killer.TribesGuid &&
@@ -87,13 +146,21 @@ namespace T2Stats.Controllers
                     dbKill = new Kill()
                     {
                         KillId = Guid.NewGuid(),
-                        
-                    }
+                        KillerId = dbKiller.PlayerId,
+                        VictimId = dbVictim.PlayerId,
+                        ReporterId = dbReporter.PlayerId,
+                        WeaponId = dbWeapon.WeaponId,
+                        MatchTime = submittedKill.MatchTime,
+                        MatchId = dbMatch.MatchId
+                    };
+                    db.Kills.Add(dbKill);
+                    db.SaveChanges();
                 }
+                return Ok();
             }
             else
             {
-                return BadRequest("Match, server properties are required.");
+                return BadRequest("Match and server properties are required.");
             }
         }
     }

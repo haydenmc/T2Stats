@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace T2Stats.Models
 {
@@ -10,7 +11,7 @@ namespace T2Stats.Models
         public DbSet<Map> Maps { get; set; }
         public DbSet<Match> Matches { get; set; }
         public DbSet<Server> Servers { get; set; }
-        
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options): base(options)
         {
             // This space intentionally left blank.
@@ -18,7 +19,31 @@ namespace T2Stats.Models
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            base.OnModelCreating(builder);
+            // Set up indexes
+            builder.Entity<Player>().HasIndex(p => p.TribesGuid);
+            builder.Entity<Player>().HasIndex(p => p.Name);
+            builder.Entity<Weapon>().HasIndex(w => w.Name);
+            builder.Entity<Map>().HasIndex(m => m.Name);
+            builder.Entity<Match>().HasIndex(m => m.GameType);
+            builder.Entity<Server>().HasIndex(s => s.IpAddress);
+            builder.Entity<Server>().HasIndex(s => s.Port);
+
+            // Set up some special foreign keys
+            // builder.Entity<Kill>()
+            //     .HasOne<Player>(k => k.Reporter)
+            //     .WithMany()
+            //     .HasForeignKey(k => k.ReporterId)
+            //     .OnDelete(DeleteBehavior.SetNull);
+            // builder.Entity<Kill>()
+            //     .HasOne<Player>(k => k.Killer)
+            //     .WithMany()
+            //     .HasForeignKey(k => k.KillerId)
+            //     .OnDelete(DeleteBehavior.SetNull);
+            // builder.Entity<Kill>()
+            //     .HasOne<Player>(k => k.Victim)
+            //     .WithMany()
+            //     .HasForeignKey(k => k.VictimId)
+            //     .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

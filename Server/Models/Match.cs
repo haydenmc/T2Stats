@@ -14,14 +14,15 @@ namespace T2Stats.Models
 
         public TimeSpan Duration { get; set; }
 
-        public Guid MapId { get; set; }
+        public Guid? MapId { get; set; }
 
         [ForeignKey("MapId")]
         public Map Map { get; set; }
 
+        [MaxLength(128)]
         public string GameType { get; set; }
 
-        public Guid ServerId { get; set; }
+        public Guid? ServerId { get; set; }
 
         [InverseProperty("Matches")]
         [ForeignKey("ServerId")]
