@@ -5,6 +5,9 @@ namespace T2Stats.Models.BindingModels
 {
     public class KillBindingModel
     {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
         [JsonProperty("weaponName")]
         public string WeaponName { get; set; }
 
@@ -18,8 +21,8 @@ namespace T2Stats.Models.BindingModels
         [JsonProperty("killer")]
         public PlayerBindingModel Killer { get; set; }
         
-        [JsonProperty("matchTime")]
-        public TimeSpan MatchTime { get; set; }
+        [JsonProperty("matchTimeMs")]
+        public long MatchTimeMs { get; set; }
 
         [JsonProperty("match")]
         public MatchBindingModel Match { get; set; }

@@ -10,6 +10,9 @@ namespace T2Stats.Models
         [Key]
         public Guid ServerId { get; set; }
 
+        [MaxLength(128)]
+        public string Name { get; set; }
+
         [MaxLength(16)]
         public string IpAddress { get; set; }
 

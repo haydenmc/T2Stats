@@ -24,6 +24,11 @@ namespace T2Stats.Models
         [ForeignKey("ReporterId")]
         public Player Reporter { get; set; }
 
+        public Guid? KillTypeId { get; set; }
+
+        [ForeignKey("KillTypeId")]
+        public KillType KillType { get; set; }
+
         public Guid? WeaponId { get; set; }
 
         [ForeignKey("WeaponId")]

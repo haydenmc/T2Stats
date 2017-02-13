@@ -8,8 +8,8 @@ namespace T2Stats.Models.BindingModels
         [JsonProperty("startTime")]
         public DateTimeOffset StartTime { get; set; }
 
-        [JsonProperty("duration")]
-        public TimeSpan Duration { get; set; }
+        [JsonProperty("timeLimitMinutes")]
+        public double TimeLimitMinutes { get; set; }
 
         [JsonProperty("map")]
         public MapBindingModel Map { get; set; }

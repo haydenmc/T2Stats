@@ -65,7 +65,7 @@ namespace T2Stats.Controllers
                     {
                         MatchId = Guid.NewGuid(),
                         StartTime = submittedKill.Match.StartTime,
-                        Duration = submittedKill.Match.Duration,
+                        Duration = TimeSpan.FromMinutes(submittedKill.Match.TimeLimitMinutes),
                         MapId = dbMap.MapId,
                         GameType = submittedKill.Match.GameType,
                         ServerId = dbServer.ServerId
@@ -119,6 +119,21 @@ namespace T2Stats.Controllers
                     db.SaveChanges();
                 }
 
+                // Populate type
+                var dbKillType = db.KillTypes.FirstOrDefault(k =>
+                    k.Type.ToLower() == submittedKill.Type.ToLower());
+                if (dbKillType == null)
+                {
+                    dbKillType = new KillType()
+                    {
+                        KillTypeId = Guid.NewGuid(),
+                        Type = submittedKill.Type,
+                        FriendlyName = submittedKill.Type
+                    };
+                    db.KillTypes.Add(dbKillType);
+                    db.SaveChanges();
+                }
+
                 // Populate weapon
                 var dbWeapon = db.Weapons.FirstOrDefault(w =>
                     w.Name.ToLower() == submittedKill.WeaponName.ToLower());
@@ -133,13 +148,14 @@ namespace T2Stats.Controllers
                     db.SaveChanges();
                 }
 
-                // Then, verify Kill
+                // Finally, check for duplicate kills
                 var dbKill = db.Kills.FirstOrDefault(k => 
+                    k.Reporter.TribesGuid == submittedKill.Reporter.TribesGuid &&
                     k.Killer.TribesGuid == submittedKill.Killer.TribesGuid &&
                     k.Victim.TribesGuid == submittedKill.Victim.TribesGuid && 
+                    k.KillType.Type.ToLower() == submittedKill.Type.ToLower() &&
                     k.Weapon.Name.ToLower() == submittedKill.WeaponName.ToLower() &&
-                    k.MatchTime > submittedKill.MatchTime.Subtract(TimeSpan.FromSeconds(KillMatchTimeToleranceSeconds)) &&
-                    k.MatchTime < submittedKill.MatchTime.Add(TimeSpan.FromSeconds(KillMatchTimeToleranceSeconds)) &&
+                    k.MatchTime == TimeSpan.FromMilliseconds(submittedKill.MatchTimeMs) &&
                     k.MatchId == dbMatch.MatchId);
                 if (dbKill == null)
                 {
@@ -149,8 +165,9 @@ namespace T2Stats.Controllers
                         KillerId = dbKiller.PlayerId,
                         VictimId = dbVictim.PlayerId,
                         ReporterId = dbReporter.PlayerId,
+                        KillTypeId = dbKillType.KillTypeId,
                         WeaponId = dbWeapon.WeaponId,
-                        MatchTime = submittedKill.MatchTime,
+                        MatchTime = TimeSpan.FromMilliseconds(submittedKill.MatchTimeMs),
                         MatchId = dbMatch.MatchId
                     };
                     db.Kills.Add(dbKill);
