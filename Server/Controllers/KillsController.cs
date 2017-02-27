@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,164 +22,36 @@ namespace T2Stats.Controllers
 
         [HttpPost]
         [Route("")]
-        public IActionResult PostKill([FromBody] KillBindingModel submittedKill)
+        public IActionResult PostKill()
         {
-            if (submittedKill.Match?.Server != null)
+            KillBindingModel submittedKill = null;
+            var reader = new StreamReader(Request.Body);
+            var bodyStr = reader.ReadToEnd();
+            var newKillEvent = new KillEvent()
             {
-                // First, verify Server
-                var dbServer = db.Servers.FirstOrDefault(s => 
-                    s.IpAddress == submittedKill.Match.Server.IpAddress &&
-                    s.Port == submittedKill.Match.Server.Port);
-                if (dbServer == null)
-                {
-                    dbServer = new Models.Server()
-                    {
-                        ServerId = Guid.NewGuid(),
-                        IpAddress = submittedKill.Match.Server.IpAddress,
-                        Port = submittedKill.Match.Server.Port
-                    };
-                    db.Servers.Add(dbServer);
-                    db.SaveChanges();
-                }
-
-                // Then, verify Match
-                var dbMatch = db.Matches.Include(m => m.Map).FirstOrDefault(m =>
-                    m.ServerId == dbServer.ServerId && 
-                    m.StartTime > submittedKill.Match.StartTime.AddSeconds(-MatchStartTimeToleranceSeconds) &&
-                    m.StartTime < DateTimeOffset.Now && 
-                    m.Map.Name.ToLower() == submittedKill.Match.Map.Name.ToLower());
-                if (dbMatch == null)
-                {
-                    var dbMap = db.Maps.FirstOrDefault(m => 
-                        m.Name == submittedKill.Match.Map.Name);
-                    if (dbMap == null)
-                    {
-                        dbMap = new Map()
-                        {
-                            MapId = Guid.NewGuid(),
-                            Name = submittedKill.Match.Map.Name
-                        };
-                        db.Maps.Add(dbMap);
-                        db.SaveChanges();
-                    }
-                    dbMatch = new Match()
-                    {
-                        MatchId = Guid.NewGuid(),
-                        StartTime = submittedKill.Match.StartTime,
-                        Duration = TimeSpan.FromMinutes(submittedKill.Match.TimeLimitMinutes),
-                        MapId = dbMap.MapId,
-                        GameType = submittedKill.Match.GameType,
-                        ServerId = dbServer.ServerId
-                    };
-                    db.Matches.Add(dbMatch);
-                    db.SaveChanges();
-                }
-
-                // Populate reporter
-                var dbReporter = db.Players.FirstOrDefault(p =>
-                    p.TribesGuid == submittedKill.Reporter.TribesGuid);
-                if (dbReporter == null)
-                {
-                    dbReporter = new Player()
-                    {
-                        PlayerId = Guid.NewGuid(),
-                        TribesGuid = submittedKill.Reporter.TribesGuid,
-                        Name = submittedKill.Reporter.Name
-                    };
-                    db.Players.Add(dbReporter);
-                    db.SaveChanges();
-                }
-
-                // Populate victim
-                var dbVictim = db.Players.FirstOrDefault(p =>
-                    p.TribesGuid == submittedKill.Victim.TribesGuid);
-                if (dbVictim == null)
-                {
-                    dbVictim = new Player()
-                    {
-                        PlayerId = Guid.NewGuid(),
-                        TribesGuid = submittedKill.Victim.TribesGuid,
-                        Name = submittedKill.Victim.Name
-                    };
-                    db.Players.Add(dbVictim);
-                    db.SaveChanges();
-                }
-
-                // Populate killer
-                var dbKiller = db.Players.FirstOrDefault(p =>
-                    p.TribesGuid == submittedKill.Killer.TribesGuid);
-                if (dbKiller == null)
-                {
-                    dbKiller = new Player()
-                    {
-                        PlayerId = Guid.NewGuid(),
-                        TribesGuid = submittedKill.Killer.TribesGuid,
-                        Name = submittedKill.Killer.Name
-                    };
-                    db.Players.Add(dbKiller);
-                    db.SaveChanges();
-                }
-
-                // Populate type
-                var dbKillType = db.KillTypes.FirstOrDefault(k =>
-                    k.Type.ToLower() == submittedKill.Type.ToLower());
-                if (dbKillType == null)
-                {
-                    dbKillType = new KillType()
-                    {
-                        KillTypeId = Guid.NewGuid(),
-                        Type = submittedKill.Type,
-                        FriendlyName = submittedKill.Type
-                    };
-                    db.KillTypes.Add(dbKillType);
-                    db.SaveChanges();
-                }
-
-                // Populate weapon
-                var dbWeapon = db.Weapons.FirstOrDefault(w =>
-                    w.Name.ToLower() == submittedKill.WeaponName.ToLower());
-                if (dbWeapon == null)
-                {
-                    dbWeapon = new Weapon()
-                    {
-                        WeaponId = Guid.NewGuid(),
-                        Name = submittedKill.WeaponName
-                    };
-                    db.Weapons.Add(dbWeapon);
-                    db.SaveChanges();
-                }
-
-                // Finally, check for duplicate kills
-                var dbKill = db.Kills.FirstOrDefault(k => 
-                    k.Reporter.TribesGuid == submittedKill.Reporter.TribesGuid &&
-                    k.Killer.TribesGuid == submittedKill.Killer.TribesGuid &&
-                    k.Victim.TribesGuid == submittedKill.Victim.TribesGuid && 
-                    k.KillType.Type.ToLower() == submittedKill.Type.ToLower() &&
-                    k.Weapon.Name.ToLower() == submittedKill.WeaponName.ToLower() &&
-                    k.MatchTime == TimeSpan.FromMilliseconds(submittedKill.MatchTimeMs) &&
-                    k.MatchId == dbMatch.MatchId);
-                if (dbKill == null)
-                {
-                    dbKill = new Kill()
-                    {
-                        KillId = Guid.NewGuid(),
-                        KillerId = dbKiller.PlayerId,
-                        VictimId = dbVictim.PlayerId,
-                        ReporterId = dbReporter.PlayerId,
-                        KillTypeId = dbKillType.KillTypeId,
-                        WeaponId = dbWeapon.WeaponId,
-                        MatchTime = TimeSpan.FromMilliseconds(submittedKill.MatchTimeMs),
-                        MatchId = dbMatch.MatchId
-                    };
-                    db.Kills.Add(dbKill);
-                    db.SaveChanges();
-                }
-                return Ok();
-            }
-            else
-            {
-                return BadRequest("Match and server properties are required.");
-            }
+                // Event
+                EventId = Guid.NewGuid(),
+                ReporterName = submittedKill.Reporter.Name,
+                ReporterTribesGuid = submittedKill.Reporter.TribesGuid,
+                MatchTime = TimeSpan.FromMilliseconds(submittedKill.MatchTimeMs),
+                MatchStartTime = submittedKill.Match.StartTime,
+                MatchDuration = TimeSpan.FromMinutes(submittedKill.Match.TimeLimitMinutes),
+                MatchGameType = submittedKill.Match.GameType,
+                MatchMapName = submittedKill.Match.Map.Name,
+                ServerName = submittedKill.Match.Server.Name,
+                ServerIpAddress = submittedKill.Match.Server.IpAddress,
+                ServerPort = submittedKill.Match.Server.Port,
+                // Kill Event
+                KillerTribesGuid = submittedKill.Killer.TribesGuid,
+                KillerName = submittedKill.Killer.Name,
+                VictimTribesGuid = submittedKill.Victim.TribesGuid,
+                VictimName = submittedKill.Victim.Name,
+                KillType = submittedKill.Type,
+                Weapon = submittedKill.WeaponName
+            };
+            db.KillEvents.Add(newKillEvent);
+            db.SaveChanges();
+            return Ok();
         }
     }
 }

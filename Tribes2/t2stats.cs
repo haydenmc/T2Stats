@@ -48,63 +48,93 @@ function StatsConnection::onDNSResolved(%this)
 function StatsConnection::onConnected(%this)
 {
     t2stats_debugLog("StatsConnection connected.");
-    %this.send(%this.data);
+    // HACK: Workaround for some weird bug where localhost connections don't go through correctly...
+    if ($T2Stats::Hostname !$= "localhost") {
+        %this.send(%this.data);
+    }
 }
 
 function StatsConnection::onDisconnect(%this)
 {
     t2stats_debugLog("StatsConnection disconnected.");
+    T2Stats.isCurrentlyReporting = false;
+    T2Stats.reportKill();
     %this.delete();
 }
 
 function StatsConnection::onLine(%this, %line)
 {
     t2stats_debugLog( "StatsConnection line received: " @ %line );
+    if (%this.lineCount == 0) {
+        %statusCode = getSubStr(%line, strstr(%line, " ") + 1, 3);
+        if (%statusCode $= "200") { // Success code from server
+            // Pop the kill we just reported.
+            t2stats_debugLog("Kill reported to server successfully.");
+            T2Stats.queuedKillReports.removeAt(0);
+        } else {
+            t2stats_debugLog("Error " @ %statusCode @ " returned from server.");
+        }
+    }
+    %this.lineCount++;
 }
 
 //
 // T2Stats object
 //
 function T2Stats::reportKill(%this) {
-    %weaponName = "Spinfusor";
-    %victimGuid = 12345;
-    %victimName = "Player 1";
-    %killerGuid = 54321;
-    %killerName = "Player 2";
-    %reporterGuid = 11111;
-    %reporterName = "Player 3";
-    %matchTime = "00:02:03.23";
-    %matchStartTime = "2014-05-06T22:24:55Z";
-    %matchDuration = "00:12:02.00";
-    %matchMapName = MissionCallback.getMissionName();
-    %matchServerIpAddress = MissionCallback.getServerAddress();
-    %matchServerPort = 28000;
+    if (%this.isCurrentlyReporting) {
+        return; // Don't connect if we're already reporting.
+    }
+    if (%this.queuedKillReports.size() <= 0) {
+        return; // Don't try to report if there's nothing to report.
+    }
+    %this.isCurrentlyReporting = true;
+    // Grab oldest queued kill
+    %kill = %this.queuedKillReports.valueAt(0);
+    // Gather relevant information
+    %weaponName = %kill.weaponName;
+    %victimGuid = %kill.victimGuid;
+    %victimName = %kill.victimName;
+    %killerGuid = %kill.killerGuid;
+    %killerName = %kill.killerName;
+    %reporterGuid = %this.clientGuid;
+    %reporterName = %this.clientName;
+    %matchTimeMs = %kill.matchTimeMs;
+    %matchStartTime = %kill.matchStartTime;
+    %matchTimeLimitMinutes = %kill.matchTimeLimitMinutes;
+    %matchGameType = %kill.matchGameType;
+    %matchMapName = %kill.matchMapName;
+    %matchServerIpAddress = %kill.matchServerIpAddress;
+    %matchServerPort = %kill.matchServerPort;
+    %matchServerName = %kill.matchServerName;
 
     %postBody =
         "{" @
         "    weaponName: \"" @ %weaponName @ "\"," @
         "    victim: {" @
-        "        tribesGuid: " @ %victimGuid @ "," @
-        "        name: \"" @ %victimName @ "\"," @
+        "        tribesGuid: " @ (%victimGuid $= "" ? 0 : %victimGuid) @ "," @
+        "        name: \"" @ %victimName @ "\"" @
         "    }," @
         "    killer: {" @
-        "        tribesGuid: " @ %killerGuid @ "," @
-        "        name: \"" @ %killerName @ "\"," @
+        "        tribesGuid: " @ (%killerGuid $= "" ? 0 : %killerGuid) @ "," @
+        "        name: \"" @ %killerName @ "\"" @
         "    }," @
         "    reporter: {" @
-        "        tribesGuid: " @ %reporterGuid @ "," @
-        "        name: \"" @ reporterName @ "\"," @
+        "        tribesGuid: " @ (%reporterGuid $= "" ? 0 : %reporterGuid) @ "," @
+        "        name: \"" @ reporterName @ "\"" @
         "    }," @
-        "    matchTime: \"" @ %matchTime @ "\"," @
+        "    matchTimeMs: " @ %matchTimeMs @ "," @
         "    match: {" @
         "        startTime: \"" @ %matchStartTime @ "\"," @
-        "        duration: \"" @ %matchDuration @ "\"," @
+        "        timeLimitMinutes: " @ (%matchTimeLimitMinutes $= "" ? 0 : %matchTimeLimitMinutes) @ "," @
+        "        gameType: \"" @ %matchGameType @ "\"," @
         "        map: {" @
-        "            name: \"" @ %matchMapName @ "\"," @
+        "            name: \"" @ %matchMapName @ "\"" @
         "        }," @
         "        server: {" @
+        "            name: \"" @ %matchServerName @ "\"," @
         "            ipAddress: \"" @ %matchServerIpAddress @ "\"," @
-        "            port: " @ %matchServerPort @ "," @
+        "            port: " @ (%matchServerPort $= "" ? 0 : %matchServerPort) @
         "        }" @
         "    }" @
         "}";
@@ -116,14 +146,19 @@ function T2Stats::reportKill(%this) {
         "Content-Type: application/json\r\n" @
         "Content-Length: " @ strlen(%postBody) @ "\r\n" @
         "Connection: close\r\n" @
-        "\r\n" @ %postBody;
+        "\r\n" @ %postBody @ "\r\n\r\n";
 
+    t2stats_debugLog("Reporting kill (" @ %killerName @ ":" @ %victimName @ ")...");
     t2stats_debugLog(%data);
-    
-    // %connection = new TCPObject(StatsConnection);
-    // %connection.data = %data;
-    // %connection.connect($T2Stats::Hostname @ ":" @ T2Stats::Port);
-    // %connection.schedule(1000,send,%data);
+
+    %connection = new TCPObject(StatsConnection);
+    %connection.lineCount = 0;
+    %connection.data = %data;
+    %connection.connect($T2Stats::Hostname @ ":" @ $T2Stats::Port);
+    // HACK: Workaround for some weird bug where localhost connections don't go through correctly...
+    if ($T2Stats::Hostname $= "localhost") {
+        %connection.schedule(1000,send,%data);
+    }
 }
 
 function T2Stats::recordKill(%this, %type, %weaponName, %killerGuid, %killerName, %victimGuid, %victimName) {
@@ -146,17 +181,24 @@ function T2Stats::recordKill(%this, %type, %weaponName, %killerGuid, %killerName
         matchTimeMs = %matchTimeMs;
         matchStartTime = %matchStartTime;
         matchTimeLimitMinutes = %matchTimeLimitMinutes;
+        matchGameType = MissionCallback.getMissionType();
         matchMapName = MissionCallback.getMissionName();
         matchServerIpAddress = %serverIp;
         matchServerPort = %serverPort;
         matchServerName = MissionCallback.getServerName();
     };
+    t2stats_debugLog("type: " @ MissionCallback.getMissionType());
+    t2stats_debugLog("map: " @ MissionCallback.getMissionName());
+    t2stats_debugLog("server ip: " @ MissionCallback.getServerAddress());
+    t2stats_debugLog("server name: " @ MissionCallback.getServerName());
     // Push to end of queue
     %this.queuedKillReports.pushBack(%killRecord);
     t2stats_debugLog("New kill recorded: " @ %this.queuedKillReports.size() @ " queued.");
     if ($T2Stats::Debug) {
         %killRecord.dump();
     }
+    // Start reporting!
+    %this.reportKill();
 }
 
 //
@@ -173,6 +215,7 @@ if(!isObject(T2Stats)) {
         matchTimeLimitMinutes = 0;
         matchTimeLeftMs = 0;
         queuedKillReports = Container::newList();
+        isCurrentlyReporting = false;
     };
 }
 
@@ -181,7 +224,7 @@ if(!isObject(T2Stats)) {
 //
 // Handle kill messages from the server
 function t2stats_handleKillCallback(%type, %killer, %victim, %weapon, %i_die, %i_win, %suicide, %tk) {
-    t2stats_debugLog("Kill detected (" @ %type @ "): '" @ detag(%killer.name) @ "' killed '" @ detag(%victim) @ "', weapon: '" @ %weapon @ "'.");
+    t2stats_debugLog("Kill detected (" @ %type @ "): '" @ detag(%killer.name) @ "' killed '" @ detag(%victim.name) @ "', weapon: '" @ %weapon @ "'.");
     T2Stats.recordKill(%type, %weapon, %killer.guid, detag(%killer.name), %victim.guid, detag(%victim.name));
 }
 Callback.add("KillCallback", t2stats_handleKillCallback);
