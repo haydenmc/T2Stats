@@ -128,7 +128,7 @@ function T2Stats::reportKill(%this) {
         "    }," @
         "    reporter: {" @
         "        tribesGuid: " @ (%reporterGuid $= "" ? 0 : %reporterGuid) @ "," @
-        "        name: \"" @ reporterName @ "\"" @
+        "        name: \"" @ %reporterName @ "\"" @
         "    }," @
         "    matchTimeMs: " @ mFormatFloat(%matchTimeMs,"%4.0f") @ "," @
         "    match: {" @
@@ -260,6 +260,14 @@ function t2stats_handleSystemClockCallback(%msgType, %msgString, %timelimit, %cu
     // }
 }
 addMessageCallback( 'MsgSystemClock', t2stats_handleSystemClockCallback );
+
+// Handle join
+function t2stats_handleJoined(%clientName, %clientId) {
+    T2Stats.clientName = t2stats_cleanupNameStr(detag(%clientName));
+    T2Stats.clientGuid = $PlayerList[%clientId].guid;
+    t2stats_debugLog("Joined game as " @ T2Stats.clientName @ "/" @ T2Stats.clientGuid);
+}
+Callback.add("onUserClientJoin", t2stats_handleJoined);
 
 // Handle game end
 function t2stats_handleGameOverCallback() {
