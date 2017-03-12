@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using T2Stats.Models;
 using T2Stats.Models.BindingModels;
 
@@ -22,11 +23,8 @@ namespace T2Stats.Controllers
 
         [HttpPost]
         [Route("")]
-        public IActionResult PostKill()
+        public IActionResult PostKill([FromBody] KillBindingModel submittedKill)
         {
-            KillBindingModel submittedKill = null;
-            var reader = new StreamReader(Request.Body);
-            var bodyStr = reader.ReadToEnd();
             var newKillEvent = new KillEvent()
             {
                 // Event

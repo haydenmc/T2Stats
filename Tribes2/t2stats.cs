@@ -27,6 +27,11 @@ function t2stats_debugLog(%str) {
     }
 }
 
+// Function to clean up extra characters from player names
+function t2stats_cleanupNameStr(%name) {
+    return stripChars(%name, "\cp\co\c6\c7\c8\c9\x10\x11");
+}
+
 //
 // StatsConnection object
 //
@@ -66,11 +71,11 @@ function StatsConnection::onLine(%this, %line)
 {
     t2stats_debugLog( "StatsConnection line received: " @ %line );
     if (%this.lineCount == 0) {
-        %statusCode = getSubStr(%line, strstr(%line, " ") + 1, 3);
-        if (%statusCode $= "200") { // Success code from server
+        %statusCode = getSubStr(%line, strstr(%line, " ") + 1, 1);
+        if (%statusCode $= "2") { // Success code from server 2xx
             // Pop the kill we just reported.
             t2stats_debugLog("Kill reported to server successfully.");
-            T2Stats.queuedKillReports.removeAt(0);
+            T2Stats.queuedKillReports.popFront();
         } else {
             t2stats_debugLog("Error " @ %statusCode @ " returned from server.");
         }
@@ -92,6 +97,7 @@ function T2Stats::reportKill(%this) {
     // Grab oldest queued kill
     %kill = %this.queuedKillReports.valueAt(0);
     // Gather relevant information
+    %type = %kill.type;
     %weaponName = %kill.weaponName;
     %victimGuid = %kill.victimGuid;
     %victimName = %kill.victimName;
@@ -110,6 +116,7 @@ function T2Stats::reportKill(%this) {
 
     %postBody =
         "{" @
+        "    type: \"" @ %type @ "\"," @
         "    weaponName: \"" @ %weaponName @ "\"," @
         "    victim: {" @
         "        tribesGuid: " @ (%victimGuid $= "" ? 0 : %victimGuid) @ "," @
@@ -123,7 +130,7 @@ function T2Stats::reportKill(%this) {
         "        tribesGuid: " @ (%reporterGuid $= "" ? 0 : %reporterGuid) @ "," @
         "        name: \"" @ reporterName @ "\"" @
         "    }," @
-        "    matchTimeMs: " @ %matchTimeMs @ "," @
+        "    matchTimeMs: " @ mFormatFloat(%matchTimeMs,"%4.0f") @ "," @
         "    match: {" @
         "        startTime: \"" @ %matchStartTime @ "\"," @
         "        timeLimitMinutes: " @ (%matchTimeLimitMinutes $= "" ? 0 : %matchTimeLimitMinutes) @ "," @
@@ -194,9 +201,6 @@ function T2Stats::recordKill(%this, %type, %weaponName, %killerGuid, %killerName
     // Push to end of queue
     %this.queuedKillReports.pushBack(%killRecord);
     t2stats_debugLog("New kill recorded: " @ %this.queuedKillReports.size() @ " queued.");
-    if ($T2Stats::Debug) {
-        %killRecord.dump();
-    }
     // Start reporting!
     %this.reportKill();
 }
@@ -216,6 +220,7 @@ if(!isObject(T2Stats)) {
         matchTimeLeftMs = 0;
         queuedKillReports = Container::newList();
         isCurrentlyReporting = false;
+        isInGame = false;
     };
 }
 
@@ -224,29 +229,51 @@ if(!isObject(T2Stats)) {
 //
 // Handle kill messages from the server
 function t2stats_handleKillCallback(%type, %killer, %victim, %weapon, %i_die, %i_win, %suicide, %tk) {
-    t2stats_debugLog("Kill detected (" @ %type @ "): '" @ detag(%killer.name) @ "' killed '" @ detag(%victim.name) @ "', weapon: '" @ %weapon @ "'.");
-    T2Stats.recordKill(%type, %weapon, %killer.guid, detag(%killer.name), %victim.guid, detag(%victim.name));
+    if (T2Stats.isInGame) {
+        t2stats_debugLog("Kill detected (" @ %type @ "): '" @ t2stats_cleanupNameStr(%killer.name) @ "' killed '" @ t2stats_cleanupNameStr(%victim.name) @ "', weapon: '" @ %weapon @ "'.");
+        T2Stats.recordKill(%type, %weapon, %killer.guid, t2stats_cleanupNameStr(%killer.name), %victim.guid, t2stats_cleanupNameStr(%victim.name));
+    }
 }
 Callback.add("KillCallback", t2stats_handleKillCallback);
 
 // Handle system clock updates from the server
 function t2stats_handleSystemClockCallback(%msgType, %msgString, %timelimit, %curTimeLeftMS) {
-    t2stats_debugLog("Match clock update: " @ %curTimeLeftMS @ "ms / " @ %timelimit @ "min limit.");
-    // Calculate the match start time
-    T2Stats.matchTimeLimitMinutes = %timelimit;
+    if (%timelimit == 0 && %curTimeLeftMS == 0) {
+        // This indicates our client has finished loading and is in game.
+        t2stats_debugLog("Game joined. Start stats recording.");
+        T2Stats.isInGame = true;
+        return;
+    }
     // If there's a time limit set, we can calculate the match start time
-    if (%timelimit > 0) {
+    if (%timelimit > 0.5) { // 30 seconds and below is used for mission countdown
+        t2stats_debugLog("Match clock update: " @ mFormatFloat(%curTimeLeftMS,"%4.0f") @ "ms / " @ %timelimit @ "min limit.");
+        T2Stats.matchTimeLimitMinutes = %timelimit;
         %matchTimeElapsedMs = (%timelimit * 60 * 1000) - %curTimeLeftMS;
         T2Stats.matchStartTimeSimMs = getSimTime() - %matchTimeElapsedMs;
-        rubyEval("tsEval 'T2Stats.matchStartTime=\"' + (Time.new - " @ (%matchTimeElapsedMs / 1000) @ ").getutc.to_s + '\";'");
+        rubyEval("tsEval 'T2Stats.matchStartTime=\"' + (Time.new - " @ (%matchTimeElapsedMs / 1000) @ ").getutc.strftime(\"%D %T +00:00\") + '\";'");
         t2stats_debugLog("Match start time: " @ T2Stats.matchStartTime);
-    } else {
-        %matchTimeElapsedMs = 0;
-        T2Stats.matchStartTimeSimMs = 0;
-        T2Stats.matchStartTime = "";
-    }
+    } 
+    // else {
+    //     %matchTimeElapsedMs = 0;
+    //     T2Stats.matchStartTimeSimMs = 0;
+    //     T2Stats.matchStartTime = "";
+    // }
 }
 addMessageCallback( 'MsgSystemClock', t2stats_handleSystemClockCallback );
+
+// Handle game end
+function t2stats_handleGameOverCallback() {
+    T2Stats.isInGame = false;
+    t2stats_debugLog("Game over detected. Stop stats recording.");
+}
+Callback.add("onGameOver", t2stats_handleGameOverCallback);
+
+// Handle disconnected
+function t2stats_handleDisconnect() {
+    T2Stats.isInGame = false;
+    t2stats_debugLog("Disconnect detected. Stop stats recording.");
+}
+Callback.add("onUserClientDrop", t2stats_handleDisconnect);
 
 // We're ready :)
 echo("T2Stats Activated.");
