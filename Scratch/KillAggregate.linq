@@ -23,7 +23,7 @@ Events
 			e.VictimName,
 			e.VictimTribesGuid,
 			e.Weapon,
-			count = Events.Count(ec => 
+			count = Events.Where(ec => 
 				ec.MatchDuration == e.MatchDuration &&
 				ec.MatchGameType == e.MatchGameType &&
 				ec.MatchMapName == e.MatchMapName &&
@@ -38,4 +38,5 @@ Events
 				ec.MatchTime < e.MatchTime
 			)
 		})
+		.SelectMany(e => e.count)
 // Order by count, lop off the top result, kill others
