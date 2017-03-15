@@ -17,8 +17,8 @@
 
 // Config
 $T2Stats::Debug = true;
-$T2Stats::Hostname = "localhost";
-$T2Stats::Port = "5000";
+$T2Stats::Hostname = "t2stats.azurewebsites.net";
+$T2Stats::Port = "80";
 
 // Debug logging function
 function t2stats_debugLog(%str) {
