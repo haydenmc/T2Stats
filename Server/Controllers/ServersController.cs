@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
@@ -90,50 +91,66 @@ namespace T2Stats.Controllers
             {
                 return BadRequest("Could not parse match start time parameter.");
             }
-            // Unique fields that denote events
-            var t1 = db.KillEvents
-                .Select(e => new {
-                    e.ReporterTribesGuid,
-                    e.ServerIpAddress,
-                    e.ServerPort,
-                    e.MatchStartTime,
-                    e.MatchTime,
-                    e.VictimTribesGuid,
-                    e.KillerTribesGuid,
-                    e.Weapon,
-                    e.KillType
-                })
-                .Distinct()
+            // Get all kill events
+            var matchKillEvents = db.KillEvents
                 .Where(e =>
                     e.ServerIpAddress == serverIpAddress &&
                     e.ServerPort == int.Parse(serverPort) &&
                     e.MatchStartTime > approxMatchStartTime.AddSeconds(-MatchStartTimeToleranceSeconds) &&
                     e.MatchStartTime < approxMatchStartTime.AddSeconds(MatchStartTimeToleranceSeconds)
                 );
-            // For each row...
-            var matches = t1
-                .Select(te => new
+            // Naive approach. Maybe this can be accomplished in SQL or something later...
+            var killEventGroups = new Dictionary<long, List<List<KillEvent>>>();
+            foreach (var killEvent in matchKillEvents)
+            {
+                // Look for nearby event group matches
+                List<KillEvent> eventGroup = null;
+                for (int i = 0; i < EventTimeToleranceSeconds; i++)
                 {
-                    // Find all within x # seconds
-                    matches = t1.Where(tee =>
-                        te.MatchTime.Subtract(tee.MatchTime).TotalSeconds < EventTimeToleranceSeconds &&
-                        te.MatchTime.Subtract(tee.MatchTime).TotalSeconds > -EventTimeToleranceSeconds
-                    ).OrderBy(tee => tee.MatchTime),
-                    te.MatchTime,
+                    // Check forward and backward
+                    for (int j = 1; j != -1; j = -1)
+                    {
+                        var keyOffset = i * j;
+                        // Find groups with the right timestamp
+                        if (killEventGroups.ContainsKey((long)killEvent.MatchTime.TotalSeconds + keyOffset))
+                        {
+                            // Check each event group for a match
+                            foreach (var eg in killEventGroups[(long)killEvent.MatchTime.TotalSeconds + keyOffset])
+                            {
+                                if (IsKillMatch(eg.First(), killEvent))
+                                {
+                                    eventGroup = eg;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
-                )
-                .Where(te =>
-                    te.matches.FirstOrDefault().MatchTime >= te.MatchTime
-                ).Select(te => new
+                if (eventGroup == null)
                 {
-                    te.matches.FirstOrDefault().ReporterTribesGuid,
-                    te.matches.FirstOrDefault().MatchTime,
-                    te.matches.FirstOrDefault().VictimTribesGuid,
-                    te.matches.FirstOrDefault().KillerTribesGuid,
-                    te.matches.FirstOrDefault().Weapon,
-                    te.matches.FirstOrDefault().KillType
-                });
-            return Ok(matches);
+                    // Make a new EventGroup
+                    eventGroup = new List<KillEvent>();
+                    // Add it to the proper place
+                    if (!killEventGroups.ContainsKey((long)killEvent.MatchTime.TotalSeconds))
+                    {
+                        killEventGroups[(long)killEvent.MatchTime.TotalSeconds] = new List<List<KillEvent>>();
+                    }
+                    killEventGroups[(long)killEvent.MatchTime.TotalSeconds].Add(eventGroup);
+                }
+                eventGroup.Add(killEvent);
+            }
+            return Ok(killEventGroups.Values.SelectMany(v => v));
+        }
+
+        // Used to determine if one KillEvent is an approximate match to another, disregarding time tolerance and reporter.
+        private bool IsKillMatch(KillEvent killEvent, KillEvent otherEvent)
+        {
+            return (
+                killEvent.KillType == otherEvent.KillType &&
+                killEvent.Weapon == otherEvent.Weapon &&
+                killEvent.KillerTribesGuid == otherEvent.KillerTribesGuid &&
+                killEvent.VictimTribesGuid == otherEvent.VictimTribesGuid
+            );
         }
     }
 }
