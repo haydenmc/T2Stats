@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using T2Stats.Models;
 
 namespace T2Stats.Services
@@ -17,6 +19,7 @@ namespace T2Stats.Services
         {
             public Event Ev;
             public List<(string reporterGuid, string reporterName)> Reporters;
+            public Timer Timer;
         }
 
         /// <summary>
@@ -70,6 +73,68 @@ namespace T2Stats.Services
                 }
             };
             pendingEvents.Add(pendingEv);
+            pendingEv.Timer = new Timer((timerState) => {
+                CommitEvent(pendingEv);
+            }, null, EventCommitTimeoutSeconds * 1000, System.Threading.Timeout.Infinite);
+        }
+
+        private void CommitEvent(PendingEvent pendingEvent)
+        {
+            pendingEvents.Remove(pendingEvent);
+            // Look up/add each reporter
+            for (var i = 0; i < pendingEvent.Reporters.Count; i++)
+            {
+                Player player = db.Players.FirstOrDefault(p => p.TribesGuid == pendingEvent.Reporters[i].reporterGuid);
+                if (player == null)
+                {
+                    player = new Player()
+                    {
+                        PlayerId = Guid.NewGuid(),
+                        TribesGuid = pendingEvent.Reporters[i].reporterGuid,
+                        Name = pendingEvent.Reporters[i].reporterName
+                    };
+                    db.Players.Add(player);
+                }
+                pendingEvent.Ev.EventReports.Add(new EventReporter()
+                {
+                    Player = player,
+                    Event = pendingEvent.Ev
+                });
+            }
+            
+            if (pendingEvent.Ev is KillEvent)
+            {
+                var pendingKillEvent = pendingEvent.Ev as KillEvent;
+                // Look up victim, killer
+                pendingKillEvent.Killer = db.Players.FirstOrDefault(p => p.TribesGuid == pendingKillEvent.KillerTribesGuid);
+                if (pendingKillEvent.Killer == null)
+                {
+                    pendingKillEvent.Killer = new Player()
+                    {
+                        PlayerId = Guid.NewGuid(),
+                        TribesGuid = pendingKillEvent.KillerTribesGuid,
+                        Name = pendingKillEvent.KillerName
+                    };
+                    db.Players.Add(pendingKillEvent.Killer);
+                }
+                pendingKillEvent.Victim = db.Players.FirstOrDefault(p => p.TribesGuid == pendingKillEvent.VictimTribesGuid);
+                if (pendingKillEvent.Victim == null)
+                {
+                    pendingKillEvent.Victim = new Player()
+                    {
+                        PlayerId = Guid.NewGuid(),
+                        TribesGuid = pendingKillEvent.VictimTribesGuid,
+                        Name = pendingKillEvent.VictimName
+                    };
+                    db.Players.Add(pendingKillEvent.Victim);
+                }
+                db.KillEvents.Add(pendingKillEvent);
+            }
+            else
+            {
+                db.Events.Add(pendingEvent.Ev);
+            }
+            db.SaveChanges();
         }
     }
-},
+}

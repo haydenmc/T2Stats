@@ -5,8 +5,10 @@ namespace T2Stats.Models
 {
     public class ApplicationDbContext: DbContext
     {
+        public DbSet<Player> Players { get; set; }
         public DbSet<Event> Events { get; set; }
         public DbSet<KillEvent> KillEvents { get; set; }
+        public DbSet<EventReporter> EventReporters { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options): base(options)
         {
