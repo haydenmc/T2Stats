@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using T2Stats.Models;
+using T2Stats.Services;
 
 namespace T2Stats
 {
@@ -34,6 +35,7 @@ namespace T2Stats
             services.AddEntityFrameworkSqlServer()
                 .AddDbContext<ApplicationDbContext>(options => 
                     options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddSingleton<EventIngestionService>();
             services.AddMvc();
         }
 

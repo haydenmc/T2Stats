@@ -15,10 +15,17 @@ namespace T2Stats.Models
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            // Set up keys
+            builder.Entity<EventReporter>().HasKey(e => new { e.EventId, e.PlayerId });
+            builder.Entity<Player>().HasKey(p => p.PlayerId).ForSqlServerIsClustered(false); // Non-clustered on GUID
+            builder.Entity<Event>().HasKey(e => e.EventId).ForSqlServerIsClustered(false); // Non-clustered on GUID
+
             // Set up indexes
+            // Clustered indexes
+            builder.Entity<Player>().HasIndex(p => p.TribesGuid).ForSqlServerIsClustered(true);
+            builder.Entity<Event>().HasIndex(e => e.MatchTime).ForSqlServerIsClustered(true);
+            // Event indexes
             builder.Entity<Event>().HasIndex(e => e.MatchMapName);
-            builder.Entity<Event>().HasIndex(e => e.ReporterName);
-            builder.Entity<Event>().HasIndex(e => e.ReporterTribesGuid);
             builder.Entity<Event>().HasIndex(e => e.ServerIpAddress);
             builder.Entity<Event>().HasIndex(e => e.ServerName);
             builder.Entity<Event>().HasIndex(e => e.ServerPort);

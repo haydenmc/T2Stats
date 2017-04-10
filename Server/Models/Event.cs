@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace T2Stats.Models
 {
@@ -8,11 +10,8 @@ namespace T2Stats.Models
         [Key]
         public Guid EventId { get; set; }
 
-        [MaxLength(128)]
-        public string ReporterName { get; set; }
-
-        [MaxLength(16)]
-        public string ReporterTribesGuid { get; set; }
+        [InverseProperty("Event")]
+        public virtual ICollection<EventReporter> EventReports { get; set; }
 
         public TimeSpan MatchTime { get; set; }
 
@@ -34,5 +33,7 @@ namespace T2Stats.Models
 
         [MaxLength(6)]
         public int ServerPort { get; set; }
+
+        public abstract bool EventCompareTo(Event other);
     }
 }

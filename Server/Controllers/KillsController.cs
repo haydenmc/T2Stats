@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
@@ -29,8 +30,7 @@ namespace T2Stats.Controllers
             {
                 // Event
                 EventId = Guid.NewGuid(),
-                ReporterName = submittedKill.Reporter.Name,
-                ReporterTribesGuid = submittedKill.Reporter.TribesGuid,
+                EventReports = new List<EventReporter>(),
                 MatchTime = TimeSpan.FromMilliseconds(submittedKill.MatchTimeMs),
                 MatchStartTime = submittedKill.Match.StartTime,
                 MatchDuration = TimeSpan.FromMinutes(submittedKill.Match.TimeLimitMinutes),

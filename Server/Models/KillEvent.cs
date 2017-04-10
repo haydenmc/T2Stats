@@ -23,5 +23,20 @@ namespace T2Stats.Models
 
         [MaxLength(128)]
         public string Weapon { get; set; }
+
+        public override bool EventCompareTo(Event other)
+        {
+            if (!(other is KillEvent))
+            {
+                return false;
+            }
+            var otherKillEvent = other as KillEvent;
+            return (
+                KillerTribesGuid == otherKillEvent.KillerTribesGuid &&
+                VictimTribesGuid == otherKillEvent.VictimTribesGuid &&
+                KillType == otherKillEvent.KillType &&
+                Weapon == otherKillEvent.Weapon 
+            );
+        }
     }
 }
