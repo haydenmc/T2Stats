@@ -4,9 +4,9 @@
     <TargetFramework>netcoreapp1.1</TargetFramework>
     <DebugType>portable</DebugType>
     <PreserveCompilationContext>true</PreserveCompilationContext>
-    <AssemblyName>Server</AssemblyName>
+    <AssemblyName>T2Stats</AssemblyName>
     <OutputType>Exe</OutputType>
-    <PackageId>Server</PackageId>
+    <PackageId>T2Stats</PackageId>
     <RuntimeFrameworkVersion>1.1.1</RuntimeFrameworkVersion>
     <PackageTargetFallback>$(PackageTargetFallback);dotnet5.6;portable-net45+win8</PackageTargetFallback>
   </PropertyGroup>

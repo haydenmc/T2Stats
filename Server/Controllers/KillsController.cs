@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using T2Stats.Models;
 using T2Stats.Models.BindingModels;
+using T2Stats.Services;
 
 namespace T2Stats.Controllers
 {
@@ -15,11 +12,11 @@ namespace T2Stats.Controllers
     {
         private const int KillMatchTimeToleranceSeconds = 2;
         private const int MatchStartTimeToleranceSeconds = 10;
-        private readonly ApplicationDbContext db;
+        private readonly EventIngestionService eventIngestionService;
 
-        public KillsController(ApplicationDbContext db) : base()
+        public KillsController(EventIngestionService eventIngestionService) : base()
         {
-            this.db = db;
+            this.eventIngestionService = eventIngestionService;
         }
 
         [HttpPost]
@@ -32,13 +29,6 @@ namespace T2Stats.Controllers
                 EventId = Guid.NewGuid(),
                 EventReports = new List<EventReporter>(),
                 MatchTime = TimeSpan.FromMilliseconds(submittedKill.MatchTimeMs),
-                MatchStartTime = submittedKill.Match.StartTime,
-                MatchDuration = TimeSpan.FromMinutes(submittedKill.Match.TimeLimitMinutes),
-                MatchGameType = submittedKill.Match.GameType,
-                MatchMapName = submittedKill.Match.Map.Name,
-                ServerName = submittedKill.Match.Server.Name,
-                ServerIpAddress = submittedKill.Match.Server.IpAddress,
-                ServerPort = submittedKill.Match.Server.Port,
                 // Kill Event
                 KillerTribesGuid = submittedKill.Killer.TribesGuid,
                 KillerName = submittedKill.Killer.Name,
@@ -47,8 +37,7 @@ namespace T2Stats.Controllers
                 KillType = submittedKill.Type,
                 Weapon = submittedKill.WeaponName
             };
-            db.KillEvents.Add(newKillEvent);
-            db.SaveChanges();
+            eventIngestionService.RecordEvent(newKillEvent, submittedKill.Reporter, submittedKill.Match);
             return Ok();
         }
     }

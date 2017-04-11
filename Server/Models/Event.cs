@@ -13,26 +13,13 @@ namespace T2Stats.Models
         [InverseProperty("Event")]
         public virtual ICollection<EventReporter> EventReports { get; set; }
 
+        public Guid MatchId { get; set; }
+
+        [ForeignKey("MatchId")]
+        [InverseProperty("Events")]
+        public Match Match { get; set; }
+
         public TimeSpan MatchTime { get; set; }
-
-        public DateTimeOffset MatchStartTime { get; set; }
-
-        public TimeSpan MatchDuration { get; set; }
-
-        [MaxLength(128)]
-        public string MatchGameType { get; set; }
-
-        [MaxLength(128)]
-        public string MatchMapName { get; set; }
-
-        [MaxLength(128)]
-        public string ServerName { get; set; }
-        
-        [MaxLength(16)]
-        public string ServerIpAddress { get; set; }
-
-        [MaxLength(6)]
-        public int ServerPort { get; set; }
 
         public abstract bool EventCompareTo(Event other);
     }

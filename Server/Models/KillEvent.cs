@@ -17,7 +17,7 @@ namespace T2Stats.Models
         [ForeignKey("KillerId")]
         public Player Killer { get; set; }
 
-        public Guid KillerId { get; set; }
+        public Guid? KillerId { get; set; }
 
         [MaxLength(16)]
         [NotMapped]
@@ -30,7 +30,7 @@ namespace T2Stats.Models
         [ForeignKey("VictimId")]
         public Player Victim { get; set; }
         
-        public Guid VictimId { get; set; }
+        public Guid? VictimId { get; set; }
 
         [MaxLength(128)]
         public string KillType { get; set; }

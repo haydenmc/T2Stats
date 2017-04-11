@@ -6,6 +6,8 @@ namespace T2Stats.Models
     public class ApplicationDbContext: DbContext
     {
         public DbSet<Player> Players { get; set; }
+        public DbSet<Server> Servers { get; set; }
+        public DbSet<Match> Matches { get; set; }
         public DbSet<Event> Events { get; set; }
         public DbSet<KillEvent> KillEvents { get; set; }
         public DbSet<EventReporter> EventReporters { get; set; }
@@ -18,28 +20,17 @@ namespace T2Stats.Models
         protected override void OnModelCreating(ModelBuilder builder)
         {
             // Set up keys
-            builder.Entity<EventReporter>().HasKey(e => new { e.EventId, e.PlayerId });
+            builder.Entity<EventReporter>().HasKey(e => new { e.EventId, e.PlayerId }); // Composite key for many-to-many table
             builder.Entity<Player>().HasKey(p => p.PlayerId).ForSqlServerIsClustered(false); // Non-clustered on GUID
             builder.Entity<Event>().HasKey(e => e.EventId).ForSqlServerIsClustered(false); // Non-clustered on GUID
+            builder.Entity<Match>().HasKey(m => m.MatchId).ForSqlServerIsClustered(false); // Non-clustered on GUID
+            builder.Entity<Server>().HasKey(s => s.ServerId).ForSqlServerIsClustered(false); // Non-clustered on GUID
 
-            // Set up indexes
-            // Clustered indexes
+            // Set up clustered indexes
             builder.Entity<Player>().HasIndex(p => p.TribesGuid).ForSqlServerIsClustered(true);
             builder.Entity<Event>().HasIndex(e => e.MatchTime).ForSqlServerIsClustered(true);
-            // Event indexes
-            builder.Entity<Event>().HasIndex(e => e.MatchMapName);
-            builder.Entity<Event>().HasIndex(e => e.ServerIpAddress);
-            builder.Entity<Event>().HasIndex(e => e.ServerName);
-            builder.Entity<Event>().HasIndex(e => e.ServerPort);
-            // Kill event indexes
-            builder.Entity<KillEvent>().HasIndex(e => e.KillerName);
-            builder.Entity<KillEvent>().HasIndex(e => e.KillerTribesGuid);
-            builder.Entity<KillEvent>().HasIndex(e => e.KillType);
-            builder.Entity<KillEvent>().HasIndex(e => e.MatchGameType);
-            builder.Entity<KillEvent>().HasIndex(e => e.MatchMapName);
-            builder.Entity<KillEvent>().HasIndex(e => e.VictimName);
-            builder.Entity<KillEvent>().HasIndex(e => e.VictimTribesGuid);
-            builder.Entity<KillEvent>().HasIndex(e => e.Weapon);
+            builder.Entity<Match>().HasIndex(m => m.StartTime).ForSqlServerIsClustered(true);
+            builder.Entity<Server>().HasIndex(s => s.IpAddress).ForSqlServerIsClustered(true);
         }
     }
 }
