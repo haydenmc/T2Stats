@@ -1,0 +1,26 @@
+{
+    "type": "LegitKill",
+    "weaponName": "spinfusor",
+    "victim": {
+        "tribesGuid": "654321",
+        "name": "Player Two"
+    },
+    "killer": {
+        "tribesGuid": "123456",
+        "name": "Player One"
+    },
+    "matchTimeMs": 1234,
+    "match": {
+        "startTime": "2017-03-30T05:25:46+00:00",
+        "timeLimitMinutes": 60,
+        "map": {
+            "name": "Katabatic"
+        },
+        "gameType": "Capture the Flag",
+        "server": {
+            "name": "Snap Crackle Pub",
+            "ipAddress": "208.100.45.135",
+            "port": 28000
+        }
+    }
+}

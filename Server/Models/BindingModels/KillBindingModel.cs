@@ -11,10 +11,6 @@ namespace T2Stats.Models.BindingModels
         [JsonProperty("weaponName")]
         public string WeaponName { get; set; }
 
-        // TODO: Remove with auth.
-        [JsonProperty("reporter")]
-        public PlayerBindingModel Reporter { get; set; }
-
         [JsonProperty("victim")]
         public PlayerBindingModel Victim { get; set; }
 

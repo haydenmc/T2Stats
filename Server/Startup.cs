@@ -11,6 +11,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using T2Stats.Models;
 using T2Stats.Services;
+using T2Stats.Middleware;
+using Microsoft.Extensions.Options;
 
 namespace T2Stats
 {
@@ -22,6 +24,7 @@ namespace T2Stats
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.default.json", optional: true, reloadOnChange: true)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
@@ -32,6 +35,7 @@ namespace T2Stats
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton(Configuration);
             services.AddEntityFrameworkSqlServer()
                 .AddDbContext<ApplicationDbContext>(options => 
                     options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
@@ -51,6 +55,18 @@ namespace T2Stats
 
             // Apply migrations
             app.ApplicationServices.GetRequiredService<ApplicationDbContext>().Database.Migrate();
+
+            // Add authentication
+            // This isn't really the right way.
+            // See http://stackoverflow.com/questions/31687955/authorizing-a-user-depending-on-the-action-name/31688792#31688792
+            app.UseMiddleware<TribesNextAuthenticationMiddleware>(
+                new OptionsWrapper<TribesNextAuthenticationMiddlewareOptions>(
+                    new TribesNextAuthenticationMiddlewareOptions() {
+                        AuthenticationServerExponent = Configuration["TribesNextAuthentication:AuthenticationServerExponent"],
+                        AuthenticationServerModulus = Configuration["TribesNextAuthentication:AuthenticationServerModulus"]
+                    }
+                )
+            );
 
             // Add MVC / file serving
             app.UseDefaultFiles();

@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using T2Stats.Models;
 using T2Stats.Models.BindingModels;
@@ -23,6 +26,12 @@ namespace T2Stats.Controllers
         [Route("")]
         public IActionResult PostKill([FromBody] KillBindingModel submittedKill)
         {
+            // TODO: Do auth property and use [Authorize] attribute.
+            if (!HttpContext.User.Identity.IsAuthenticated)
+            {
+                return Unauthorized();
+            }
+            // Record kill event
             var newKillEvent = new KillEvent()
             {
                 // Event
@@ -37,7 +46,15 @@ namespace T2Stats.Controllers
                 KillType = submittedKill.Type,
                 Weapon = submittedKill.WeaponName
             };
-            eventIngestionService.RecordEvent(newKillEvent, submittedKill.Reporter, submittedKill.Match);
+            // Extract authenticated user info
+            var userName = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name).Value;
+            var userGuid = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value;
+            var reporter = new PlayerBindingModel() {
+                Name = userName,
+                TribesGuid = userGuid
+            };
+            // Report to ingestion service
+            eventIngestionService.RecordEvent(newKillEvent, reporter, submittedKill.Match);
             return Ok();
         }
     }
