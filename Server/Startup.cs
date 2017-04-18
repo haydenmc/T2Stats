@@ -13,6 +13,8 @@ using T2Stats.Models;
 using T2Stats.Services;
 using T2Stats.Middleware;
 using Microsoft.Extensions.Options;
+using AutoMapper;
+using T2Stats.Models.ViewModels;
 
 namespace T2Stats
 {
@@ -35,7 +37,18 @@ namespace T2Stats
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton(Configuration);
+            // register automapper
+            var mapperConfig = new MapperConfiguration(cfg => {
+                cfg.CreateMap<KillEvent, KillEventViewModel>()
+                    .ForMember(
+                        dest => dest.Reporters,
+                        opt => opt.MapFrom(src => src.EventReports.Select(er => er.Player))
+                    );
+                cfg.CreateMap<Player, PlayerViewModel>();
+                cfg.CreateMap<Server, ServerViewModel>();
+                cfg.CreateMap<Match, MatchViewModel>();
+            });
+            services.AddSingleton(mapperConfig.CreateMapper());
             services.AddEntityFrameworkSqlServer()
                 .AddDbContext<ApplicationDbContext>(options => 
                     options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));

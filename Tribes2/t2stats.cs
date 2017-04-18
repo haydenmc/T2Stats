@@ -19,6 +19,11 @@
 $T2Stats::Debug = true;
 $T2Stats::Hostname = "t2stats.azurewebsites.net";
 $T2Stats::Port = "80";
+$T2Stats::MaxRetries = 5;
+$T2Stats::RetryDelay = 5000;
+// Debug
+// $T2Stats::Hostname = "localhost";
+// $T2Stats::Port = "5000";
 
 // Debug logging function
 function t2stats_debugLog(%str) {
@@ -63,7 +68,19 @@ function StatsConnection::onDisconnect(%this)
 {
     t2stats_debugLog("StatsConnection disconnected.");
     T2Stats.isCurrentlyReporting = false;
-    T2Stats.reportKill();
+    if (T2Stats.serverErrorText $= "") {
+        T2Stats.reportKill();
+    } else {
+        if (T2Stats.consecutiveServerErrorCount > $T2Stats::MaxRetries) {
+            t2stats_debugLog("Max retry count of " @ $T2Stats::MaxRetries @ " exceeded. Skipping stat...");
+            T2Stats.queuedKillReports.popFront();
+            T2Stats.consecutiveServerErrorCount = 0;
+        } else {
+            t2stats_debugLog("Retry attempt #" @ T2Stats.consecutiveServerErrorCount @ "...");
+        }
+        T2Stats.serverErrorText = "";
+        T2Stats.schedule($T2Stats::RetryDelay,reportKill);
+    }
     %this.delete();
 }
 
@@ -76,8 +93,12 @@ function StatsConnection::onLine(%this, %line)
             // Pop the kill we just reported.
             t2stats_debugLog("Kill reported to server successfully.");
             T2Stats.queuedKillReports.popFront();
+            T2Stats.serverErrorText = "";
+            T2Stats.consecutiveServerErrorCount = 0;
         } else {
             t2stats_debugLog("Error " @ %statusCode @ " returned from server.");
+            T2Stats.serverErrorText = %line;
+            T2Stats.consecutiveServerErrorCount += 1;
         }
     }
     %this.lineCount++;
@@ -126,10 +147,6 @@ function T2Stats::reportKill(%this) {
         "        tribesGuid: " @ (%killerGuid $= "" ? 0 : %killerGuid) @ "," @
         "        name: \"" @ %killerName @ "\"" @
         "    }," @
-        "    reporter: {" @
-        "        tribesGuid: " @ (%reporterGuid $= "" ? 0 : %reporterGuid) @ "," @
-        "        name: \"" @ %reporterName @ "\"" @
-        "    }," @
         "    matchTimeMs: " @ mFormatFloat(%matchTimeMs,"%4.0f") @ "," @
         "    match: {" @
         "        startTime: \"" @ %matchStartTime @ "\"," @
@@ -152,6 +169,7 @@ function T2Stats::reportKill(%this) {
         "User-Agent: Tribes2\r\n" @
         "Content-Type: application/json\r\n" @
         "Content-Length: " @ strlen(%postBody) @ "\r\n" @
+        "Authorization: TribesNext " @ $LoginCertificate @ "\r\n" @
         "Connection: close\r\n" @
         "\r\n" @ %postBody @ "\r\n\r\n";
 
@@ -221,6 +239,8 @@ if(!isObject(T2Stats)) {
         queuedKillReports = Container::newList();
         isCurrentlyReporting = false;
         isInGame = false;
+        consecutiveServerErrorCount = 0;
+        serverErrorText = "";
     };
 }
 
