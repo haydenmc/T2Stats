@@ -37,7 +37,7 @@
         </style>
     </head>
     <body>
-        <header>Tribes 2 Stats</header>
+        <!--<header>Tribes 2 Stats</header>
         <main>
             <div class="list">
                 <header>Servers</header>
@@ -54,8 +54,14 @@
                 <ul class="eventList">
                 </ul>
             </div>
-        </main>
-        <script type="text/javascript">
+        </main>-->
+
+        <div id="application"></div>
+        <!-- Main -->
+        <script src="bundle.js"></script>
+
+        <!-- Old stuff -->
+        <!--<script type="text/javascript">
             function populateServerList() {
                 var serverListXhr = new XMLHttpRequest();
                 serverListXhr.addEventListener("load", function(e) {
@@ -118,6 +124,6 @@
                 eventListXhr.send();
             }
             window.addEventListener("load", populateServerList);
-        </script>
+        </script>-->
     </body>
 </html>
