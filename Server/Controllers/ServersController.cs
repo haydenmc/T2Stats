@@ -10,7 +10,7 @@ using T2Stats.Models.ViewModels;
 
 namespace T2Stats.Controllers
 {
-    [Route("Servers")]
+    [Route("api/Servers")]
     public class ServersController : Controller
     {
         private readonly ApplicationDbContext db;

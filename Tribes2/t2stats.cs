@@ -6,8 +6,7 @@
 // #author = Hayden McAfee
 // #warrior = Apex-
 // #email = hayden@outlook.com
-// #web = http://github.com/haydenmc
-// #web = http://hmcafee.com
+// #web = http://github.com/haydenmc/T2Stats
 // #description = Advanced crowdsourced Tribes 2 statistics.
 // #status = Alpha
 // #include = support/kill_callbacks.cs
@@ -164,7 +163,7 @@ function T2Stats::reportKill(%this) {
         "}";
 
 	%data = 
-        "POST /Kills HTTP/1.1\r\n" @
+        "POST /api/Kills HTTP/1.1\r\n" @
         "Host: " @ $T2Stats::Hostname @ ":" @ $T2Stats::Port @ "\r\n" @
         "User-Agent: Tribes2\r\n" @
         "Content-Type: application/json\r\n" @

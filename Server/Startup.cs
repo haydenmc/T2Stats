@@ -82,9 +82,14 @@ namespace T2Stats
             );
 
             // Add MVC / file serving
-            app.UseDefaultFiles();
             app.UseStaticFiles();
-            app.UseMvcWithDefaultRoute();
+            app.UseMvc(routes => {
+                routes.MapRoute(
+                    name: "default",
+                    template: "{controller=App}/{action=Index}/{id?}"
+                );
+                routes.MapSpaFallbackRoute("spa-fallback", new { controller = "App", action = "Index" });
+            });
         }
     }
 }

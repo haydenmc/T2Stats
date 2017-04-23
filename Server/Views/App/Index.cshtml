@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Tribes 2 Stats</title>
+        <style>
+            body {
+                background: #000;
+                color: #fff;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+            body > header {
+                font-weight: 900;
+                font-size: 48px;
+                text-transform: uppercase;
+            }
+            main {
+                display: flex;
+                flex-direction: row;
+            }
+            div.list {
+                min-width: 20%;
+                padding:0 8px;
+            }
+            div.list > header {
+                font-weight: 700;
+                font-size: 16px;
+                text-transform: uppercase;
+            }
+            div.list > ul {
+                list-style-type: none;
+                padding: 0;
+                margin: 0;
+            }
+            div.list > ul > li {
+                margin: 8px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="application"></div>
+        <script src="bundle.js"></script>
+    </body>
+</html>

@@ -10,7 +10,7 @@ using T2Stats.Services;
 
 namespace T2Stats.Controllers
 {
-    [Route("Kills")]
+    [Route("api/Kills")]
     public class KillsController: Controller
     {
         private const int KillMatchTimeToleranceSeconds = 2;

@@ -9,7 +9,7 @@ using T2Stats.Models.ViewModels;
 
 namespace T2Stats.Controllers
 {
-    [Route("Matches")]
+    [Route("api/Matches")]
     public class MatchesController : Controller
     {
         private readonly ApplicationDbContext db;
