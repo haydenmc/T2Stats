@@ -41,7 +41,10 @@
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0" />
   </ItemGroup>
 
-  <Target Name="MyPostCompileTarget" AfterTargets="Build">
+  <Target Name="NpmRestore" BeforeTargets="Build">
+    <Exec Command="npm install" />
+  </Target>
+  <Target Name="NpmBuild" AfterTargets="Build">
     <Exec Command="npm run build" />
   </Target>
 
