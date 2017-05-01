@@ -16,7 +16,7 @@ export class Application extends React.Component<ApplicationProps, undefined> {
         return (
             <Router>
                 <div>
-                    <header><img src="/img/logo.svg" />Stats</header>
+                    <header><Link to="/"><img src="/img/logo.svg" /></Link></header>
                     <main>
                         <Route exact path="/" component={HomePage} />
                         <Route exact path="/servers" component={ServersPage} />

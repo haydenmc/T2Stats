@@ -3,38 +3,20 @@
     <head>
         <title>Tribes 2 Stats</title>
         <style>
+            :root {
+                --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
             body {
                 background: #fff;
                 color: #000;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }
-            header {
-                font-weight: 900;
-                font-size: 48px;
-                text-transform: uppercase;
+                font-family: var(--font-family);
             }
             main {
                 display: flex;
                 flex-direction: row;
             }
-            div.list {
-                min-width: 20%;
-                padding:0 8px;
-            }
-            div.list > header {
-                font-weight: 700;
-                font-size: 16px;
-                text-transform: uppercase;
-            }
-            div.list > ul {
-                list-style-type: none;
-                padding: 0;
-                margin: 0;
-            }
-            div.list > ul > li {
-                margin: 8px 0;
-            }
         </style>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
         <div id="application"></div>

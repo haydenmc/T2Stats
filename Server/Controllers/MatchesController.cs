@@ -22,11 +22,19 @@ namespace T2Stats.Controllers
         }
 
         [HttpGet]
+        [Route("")]
+        public IActionResult GetRecentMatches()
+        {
+            var matches = db.Matches.Include(m => m.Server).OrderByDescending(m => m.StartTime).Take(50);
+            return Ok(mapper.Map<ICollection<MatchViewModel>>(matches));
+        }
+
+        [HttpGet]
         [Route("{matchId:guid}")]
         public IActionResult GetMatch(Guid matchId)
         {
             // TODO: Return a match summary object with all events
-            var match = db.Matches.SingleOrDefault(m => m.MatchId == matchId);
+            var match = db.Matches.Include(m => m.Server).SingleOrDefault(m => m.MatchId == matchId);
             return Ok(mapper.Map<MatchViewModel>(match));
         }
 

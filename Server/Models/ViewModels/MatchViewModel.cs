@@ -8,8 +8,8 @@ namespace T2Stats.Models.ViewModels
         [JsonProperty("matchId")]
         public Guid MatchId { get; set; }
 
-        [JsonProperty("serverId")]
-        public Guid ServerId { get; set; }
+        [JsonProperty("server")]
+        public ServerViewModel Server { get; set; }
 
         [JsonProperty("mapName")]
         public string MapName { get; set; }
