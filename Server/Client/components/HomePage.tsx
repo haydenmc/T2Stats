@@ -25,7 +25,8 @@ var styles = {
     } as React.CSSProperties,
     summaryPanelListContainer: {
         "display": "flex",
-        "flexDirection": "row"
+        "flexDirection": "row",
+        "flexWrap": "wrap",
     } as React.CSSProperties,
     matchSummaryListItem: {
         "cursor": "pointer"
@@ -83,10 +84,10 @@ export class HomePage extends React.Component<RouteComponentProps<undefined>, Ho
             <div style={styles.container}>
                 <div style={styles.summaryPanel}>
                     <header style={styles.summaryPanelHeader}>Recent Matches</header>
-                    <div>
+                    <div style={styles.summaryPanelListContainer}>
                         {this.state.matches.map((object, i) => {
                             return (
-                                <MatchSummaryListItem match={object} style={styles.matchSummaryListItem} onClick={() => { this.props.history.push('/matches/' + object.matchId); }} />
+                                <MatchSummaryListItem key={object.matchId} match={object} style={styles.matchSummaryListItem} onClick={() => { this.props.history.push('/matches/' + object.matchId); }} />
                             );
                         })}
                     </div>

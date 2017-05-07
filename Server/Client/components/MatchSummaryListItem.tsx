@@ -11,15 +11,18 @@ interface MatchSummaryListItemProps {
 // Locally scoped styles
 var styles = {
     container: {
-        maxWidth: "320px",
-        padding: "4px 0"
+        width: "300px",
+        padding: "4px 4px 4px 0"
     } as React.CSSProperties,
     matchTitle: {
         fontFamily: "var(--font-family)",
         fontWeight: 900,
         textTransform: "uppercase",
         fontSize: "32px",
-        lineHeight: 1
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis" 
     } as React.CSSProperties,
     matchSubtitle: {
         fontFamily: "var(--font-family)",
