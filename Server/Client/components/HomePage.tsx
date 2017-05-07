@@ -1,5 +1,6 @@
 import * as React from "react";
 import { RouteComponentProps, Link } from "react-router-dom";
+import { MatchSummaryListItem } from "./MatchSummaryListItem";
 import { MatchModel } from "../models/MatchModel";
 import { PlayerModel } from "../models/PlayerModel";
 
@@ -14,14 +15,20 @@ var styles = {
     } as React.CSSProperties,
     summaryPanel: {
         "border": "none",
-        "maxWidth": "480px",
+        "width": "100%",
         "minWidth": "320px",
-        "margin": "16px"
     } as React.CSSProperties,
     summaryPanelHeader: {
         "fontFamily": "var(--font-family)",
         "fontWeight": "bold",
         "textTransform": "uppercase"
+    } as React.CSSProperties,
+    summaryPanelListContainer: {
+        "display": "flex",
+        "flexDirection": "row"
+    } as React.CSSProperties,
+    matchSummaryListItem: {
+        "cursor": "pointer"
     } as React.CSSProperties
 };
 
@@ -76,27 +83,13 @@ export class HomePage extends React.Component<RouteComponentProps<undefined>, Ho
             <div style={styles.container}>
                 <div style={styles.summaryPanel}>
                     <header style={styles.summaryPanelHeader}>Recent Matches</header>
-                    <ul>
+                    <div>
                         {this.state.matches.map((object, i) => {
                             return (
-                                <li key={object.matchId} onClick={() => { this.props.history.push('/matches/' + object.matchId); }}>
-                                    {object.gameType} @ {object.mapName}
-                                </li>
+                                <MatchSummaryListItem match={object} style={styles.matchSummaryListItem} onClick={() => { this.props.history.push('/matches/' + object.matchId); }} />
                             );
                         })}
-                    </ul>
-                </div>
-                <div style={styles.summaryPanel}>
-                    <header style={styles.summaryPanelHeader}>Recent Players</header>
-                    <ul>
-                        {this.state.players.map((object, i) => {
-                            return (
-                                <li key={object.tribesGuid} onClick={() => { this.props.history.push('/players/' + object.tribesGuid); }}>
-                                    {object.name}
-                                </li>
-                            );
-                        })}
-                    </ul>
+                    </div>
                 </div>
             </div>
         );
