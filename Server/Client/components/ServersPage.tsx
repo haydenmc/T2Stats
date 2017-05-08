@@ -1,5 +1,6 @@
 import * as React from "react";
 import { RouteComponentProps, withRouter } from "react-router-dom";
+import { Header } from "./Header";
 import { ServerModel }  from "../models/ServerModel";
 
 interface ServersPageProps {
@@ -39,6 +40,7 @@ class BaseServersPage extends React.Component<RouteComponentProps<undefined>, Se
     public render() {
         return (
             <div>
+                <Header>Recent Matches</Header>
                 {this.state.servers.map((object, i) => {
                     return (
                         <li onClick={() => { this.props.history.push('/servers/' + object.ipAddress + '/' + object.port); }}>

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { RouteComponentProps, Link } from "react-router-dom";
+import { Header } from "./Header";
 import { MatchSummaryListItem } from "./MatchSummaryListItem";
 import { MatchModel } from "../models/MatchModel";
 import { PlayerModel } from "../models/PlayerModel";
@@ -9,24 +10,14 @@ var styles = {
     container: {
         "boxSizing": "border-box",
         "width": "100%",
-        "justifyContent": "center",
         "display": "flex",
-        "flexWrap": "wrap"
-    } as React.CSSProperties,
-    summaryPanel: {
-        "border": "none",
-        "width": "100%",
-        "minWidth": "320px",
+        "flexDirection": "row",
+        "flexWrap": "wrap",
     } as React.CSSProperties,
     summaryPanelHeader: {
         "fontFamily": "var(--font-family)",
         "fontWeight": "bold",
         "textTransform": "uppercase"
-    } as React.CSSProperties,
-    summaryPanelListContainer: {
-        "display": "flex",
-        "flexDirection": "row",
-        "flexWrap": "wrap",
     } as React.CSSProperties,
     matchSummaryListItem: {
         "cursor": "pointer"
@@ -39,8 +30,8 @@ interface HomePageState {
 }
 
 export class HomePage extends React.Component<RouteComponentProps<undefined>, HomePageState> {
-    public constructor() {
-        super();
+    public constructor(props: RouteComponentProps<undefined>) {
+        super(props);
         this.state = {
             matches: [],
             players: []
@@ -81,17 +72,15 @@ export class HomePage extends React.Component<RouteComponentProps<undefined>, Ho
 
     render() {
         return (
-            <div style={styles.container}>
-                <div style={styles.summaryPanel}>
-                    <header style={styles.summaryPanelHeader}>Recent Matches</header>
-                    <div style={styles.summaryPanelListContainer}>
+            <div>
+                <Header>Recent Matches</Header>
+                <main style={styles.container}>
                         {this.state.matches.map((object, i) => {
                             return (
                                 <MatchSummaryListItem key={object.matchId} match={object} style={styles.matchSummaryListItem} onClick={() => { this.props.history.push('/matches/' + object.matchId); }} />
                             );
                         })}
-                    </div>
-                </div>
+                </main>
             </div>
         );
     }
